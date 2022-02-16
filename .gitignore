@@ -1,1 +1,7 @@
 .idea/
+medical_data/
+dataset/
+images/
+model/
+.DS_Store
+__pycache__/
