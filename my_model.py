@@ -1,5 +1,6 @@
 from torchgan.models import *
 import torch
+
 def dcgan_network():
     dcgan_network = {
         "generator": {

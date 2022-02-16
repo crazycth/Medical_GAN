@@ -9,6 +9,7 @@ import numpy as np
 from DataLoader import *
 from torchgan.losses import *
 from torchgan.trainer import Trainer
+from my_model import *
 
 
 minimax_losses = [MinimaxGeneratorLoss(), MinimaxDiscriminatorLoss()]
