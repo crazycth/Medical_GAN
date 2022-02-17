@@ -67,5 +67,3 @@ trainer(mnist_loader)
 # plt.title("Fake Images")
 # plt.imshow(plt.imread("{}/epoch{}_generator.png".format(trainer.recon, trainer.epochs)))
 # plt.show()
-
-
