@@ -9,8 +9,9 @@ def dcgan_network():
             "name": DCGANGenerator,
             "args": {
                 "encoding_dims": 100,
+                "out_size":256,
                 "out_channels": 3,
-                "step_channels": 32,
+                "step_channels": 64,
                 "nonlinearity": torch.nn.LeakyReLU(0.2),
                 "last_nonlinearity": torch.nn.Tanh(),
             },
@@ -20,6 +21,7 @@ def dcgan_network():
             "name": DCGANDiscriminator,
             "args": {
                 "in_channels": 3,
+                "in_size":256,
                 "step_channels": 32,
                 "nonlinearity": torch.nn.LeakyReLU(0.2),
                 "last_nonlinearity": torch.nn.LeakyReLU(0.2),

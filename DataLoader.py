@@ -9,7 +9,7 @@ import pandas as pd
 import os
 import cv2
 import random
-
+import matplotlib.pyplot as plt
 
 def Mnist_loader(batch_size,shuffle=True):
     dataset = dsets.MNIST(
@@ -52,7 +52,7 @@ class Date(dataset.Dataset):
         self.dic = label_dic
         self.train = train
         self.data = os.listdir(self.root)
-        random.shuffle(self.data)
+        #random.shuffle(self.data)
         self.len = len(self.data)
         self.transform_train = transform_train
         self.transform_val = transform_val
@@ -70,16 +70,16 @@ class Date(dataset.Dataset):
 
 transform_train = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Resize((32,32)),
+    transforms.Resize((256,256)),
     # transforms.RandomResizedCrop(224,scale=(0.08,1.0),ratio=(3.0/4.0,4.0/3.0)),
     # transforms.RandomHorizontalFlip(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ]
 )
 
 transform_val = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Resize((224,224)),
+    transforms.Resize((256,256)),
     # transforms.CenterCrop(224),
     #transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
@@ -100,5 +100,10 @@ def get_medical_loader(batch_size=16,root="./dataset/pic_save_1"):
 
 
 if __name__ == '__main__':
-    loader = get_medical_loader(16)
-    print(loader.__iter__().next()[0].shape)
+    loader = get_medical_loader(1)
+    data = loader.__iter__().next()[0][0]
+    print(data.shape)
+    unloader = transforms.ToPILImage()
+    pic = unloader(data)
+    plt.imshow(pic)
+    plt.show()

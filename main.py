@@ -34,7 +34,8 @@ print("Device: {}".format(device))
 print("Epochs: {}".format(epochs))
 
 loader = get_medical_loader(8)
-cgan = cgan()
+#print(loader.__iter__().next()[0].shape)
+cgan = dcgan_network()
 lsgan_losses = [LeastSquaresGeneratorLoss(), LeastSquaresDiscriminatorLoss()]
 trainer_cgan = Trainer(
     cgan, lsgan_losses, sample_size=64, epochs=epochs, device=device
