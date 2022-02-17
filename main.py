@@ -33,7 +33,7 @@ else:
 print("Device: {}".format(device))
 print("Epochs: {}".format(epochs))
 
-loader = get_medical_loader(1)
+loader = get_medical_loader(8)
 cgan = cgan()
 lsgan_losses = [LeastSquaresGeneratorLoss(), LeastSquaresDiscriminatorLoss()]
 trainer_cgan = Trainer(

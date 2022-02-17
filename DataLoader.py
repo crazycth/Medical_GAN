@@ -84,7 +84,7 @@ transform_val = transforms.Compose([
     #transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-def get_medical_loader(batch_size=16,root="/Users/richard/PycharmProjects/medical_GAN/dataset/pic_save_1"):
+def get_medical_loader(batch_size=16,root="./dataset/pic_save_1"):
     """
     :return: loader_train , loader_val
     """

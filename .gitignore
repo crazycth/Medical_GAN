@@ -5,3 +5,4 @@ images/
 model/
 .DS_Store
 __pycache__/
+out
