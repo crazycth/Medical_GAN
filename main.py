@@ -33,7 +33,7 @@ else:
 print("Device: {}".format(device))
 print("Epochs: {}".format(epochs))
 
-loader = get_medical_loader(8)
+loader = get_Cifar_10_loader(16,True)
 #print(loader.__iter__().next()[0].shape)
 cgan = dcgan_network()
 lsgan_losses = [LeastSquaresGeneratorLoss(), LeastSquaresDiscriminatorLoss()]

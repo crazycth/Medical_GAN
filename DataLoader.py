@@ -28,6 +28,23 @@ def Mnist_loader(batch_size,shuffle=True):
     return dataloader
 
 
+def get_Cifar_10_loader(batch_size,shuffle=True):
+    dataset = dsets.CIFAR10(
+        root="./dataset",
+        train=True,
+        transform=transforms.Compose(
+            [
+                transforms.Resize((32, 32)),
+                transforms.ToTensor(),
+                #transforms.Normalize(mean=(0.5,), std=(0.5,)),
+            ]
+        ),
+        download=True
+    )
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+    return dataloader
+
+
 class ChunkSampler(sampler.Sampler):
     """Samples elements sequentially from some offset.
     Arguments:
@@ -84,7 +101,7 @@ transform_val = transforms.Compose([
     #transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-def get_medical_loader(batch_size=16,root="./dataset/pic_save_1"):
+def get_medical_loader(batch_size=16,root="dataset/pic_save_0备份"):
     """
     :return: loader_train , loader_val
     """
