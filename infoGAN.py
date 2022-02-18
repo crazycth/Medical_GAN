@@ -14,12 +14,15 @@ from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
+import wandb
 
 from DataLoader import *
 
-os.makedirs("images/static/", exist_ok=True)
-os.makedirs("images/varying_c1/", exist_ok=True)
-os.makedirs("images/varying_c2/", exist_ok=True)
+# wandb.init(project="GAN",name="INFOGAN")
+
+os.makedirs("images/infoGAN/static/", exist_ok=True)
+os.makedirs("images/infoGAN/varying_c1/", exist_ok=True)
+os.makedirs("images/infoGAN/varying_c2/", exist_ok=True)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
@@ -187,7 +190,7 @@ def sample_image(n_row, batches_done):
     # Static sample
     z = Variable(FloatTensor(np.random.normal(0, 1, (n_row ** 2, opt.latent_dim))))
     static_sample = generator(z, static_label, static_code)
-    save_image(static_sample.data, "images/static/%d.png" % batches_done, nrow=n_row, normalize=True)
+    save_image(static_sample.data, "images/infoGAN/static/%d.png" % batches_done, nrow=n_row, normalize=True)
 
     # Get varied c1 and c2
     zeros = np.zeros((n_row ** 2, 1))
@@ -196,8 +199,9 @@ def sample_image(n_row, batches_done):
     c2 = Variable(FloatTensor(np.concatenate((zeros, c_varied), -1)))
     sample1 = generator(static_z, static_label, c1)
     sample2 = generator(static_z, static_label, c2)
-    save_image(sample1.data, "images/varying_c1/%d.png" % batches_done, nrow=n_row, normalize=True)
-    save_image(sample2.data, "images/varying_c2/%d.png" % batches_done, nrow=n_row, normalize=True)
+    save_image(sample1.data, "images/infoGAN/varying_c1/%d.png" % batches_done, nrow=n_row, normalize=True)
+    save_image(sample2.data, "images/infoGAN/varying_c2/%d.png" % batches_done, nrow=n_row, normalize=True)
+
 
 
 # ----------

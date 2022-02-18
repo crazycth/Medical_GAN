@@ -114,7 +114,7 @@ discriminator = Discriminator().to(device)
 #     shuffle=True,
 # )
 
-dataloader = get_medical_loader(opt.batch_size)
+dataloader = get_medical_loader(opt.batch_size,"dataset/pic_trans_1")
 
 # Optimizers
 optimizer_G = torch.optim.Adam(generator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
@@ -191,4 +191,4 @@ for epoch in range(opt.n_epochs):
 
         batches_done = epoch * len(dataloader) + i
         if batches_done % opt.sample_interval == 0:
-            save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+            save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True) 

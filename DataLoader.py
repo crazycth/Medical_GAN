@@ -87,7 +87,7 @@ class Date(dataset.Dataset):
 
 transform_train = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Resize((256,256)),
+    transforms.Resize((128,128)),
     transforms.Normalize([0.5], [0.5])
     # transforms.RandomResizedCrop(224,scale=(0.08,1.0),ratio=(3.0/4.0,4.0/3.0)),
     # transforms.RandomHorizontalFlip(),
