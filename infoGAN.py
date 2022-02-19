@@ -15,8 +15,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 import wandb
+import pandas as pd
 
-from DataLoader import *
+import torchvision.transforms as transforms
+from torch.utils.data import sampler
+import torchvision
+from torch.utils.data import DataLoader,dataset
+import torchvision.datasets as dsets
+import cv2
+
+# from DataLoader import *
 
 # wandb.init(project="GAN",name="INFOGAN")
 
@@ -35,7 +43,7 @@ parser.add_argument("--latent_dim", type=int, default=62, help="dimensionality o
 parser.add_argument("--code_dim", type=int, default=2, help="latent code")
 parser.add_argument("--n_classes", type=int, default=10, help="number of classes for dataset")
 parser.add_argument("--img_size", type=int, default=32, help="size of each image dimension")
-parser.add_argument("--channels", type=int, default=1, help="number of image channels")
+parser.add_argument("--channels", type=int, default=3, help="number of image channels")
 parser.add_argument("--sample_interval", type=int, default=400, help="interval between image sampling")
 opt = parser.parse_args()
 print(opt)
@@ -165,6 +173,81 @@ discriminator.apply(weights_init_normal)
 #     shuffle=True,
 # )
 
+
+transform_train = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Resize((opt.img_size,opt.img_size)),
+    transforms.Normalize([0.5], [0.5])
+    # transforms.RandomResizedCrop(224,scale=(0.08,1.0),ratio=(3.0/4.0,4.0/3.0)),
+    # transforms.RandomHorizontalFlip(),
+    # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+]
+)
+
+# transform_val = transforms.Compose([
+#     transforms.ToTensor(),
+#     transforms.Resize((128,128)),
+#     transforms.Normalize([0.5], [0.5])
+#     # transforms.CenterCrop(224),
+#     #transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+# ])
+
+
+class ChunkSampler(sampler.Sampler):
+    """Samples elements sequentially from some offset.
+    Arguments:
+        num_samples: # of desired datapoints
+        start: offset where we should start selecting from
+    """
+    def __init__(self, num_samples, start=0):
+        self.num_samples = num_samples
+        self.start = start
+
+    def __iter__(self):
+        return iter(range(self.start, self.start + self.num_samples))
+
+    def __len__(self):
+        return self.num_samples
+
+
+class Date(dataset.Dataset):
+    def __init__(self,label_dic,train=True,transform_train = None , transform_val = None , root = None):
+        self.root = root
+        super(Date,self).__init__()
+        self.dic = label_dic
+        self.train = train
+        self.data = os.listdir(self.root)
+        #random.shuffle(self.data)
+        self.len = len(self.data)
+        self.transform_train = transform_train
+        self.transform_val = transform_val
+
+    def __getitem__(self, index):
+        name = self.data[index]
+        data = cv2.imread(self.root+"/"+name)
+        transform = self.transform_train if self.train else self.transform_val
+        data = transform(data)
+        label = self.dic[name[:12]]
+        return data,label
+
+    def __len__(self):
+        return self.len
+
+def get_medical_loader(batch_size=16,root="dataset/pic_save_0备份"):
+    """
+    :return: loader_train , loader_val
+    """
+    global transform_train
+    data = pd.read_excel("dataset/tem_10.xlsx")
+    dic = dict(zip(data['cases'].values, data['tag'].values))
+    data_train = Date(dic,True,transform_train,transform_train,root=root)
+    #data_val = Date(dic,False,transform_train,transform_val,root=root)
+    total_num = len(os.listdir(root))
+    train_num = int(total_num)
+    loader_train = DataLoader(data_train,batch_size=batch_size,sampler=ChunkSampler(train_num,0),drop_last=True)
+    #loader_val = DataLoader(data_val,batch_size=batch_size,sampler=ChunkSampler(val_num,train_num),drop_last=True)
+    return loader_train
+
 dataloader = get_medical_loader(opt.batch_size)
 
 # Optimizers
@@ -192,7 +275,7 @@ def sample_image(n_row, batches_done):
     static_sample = generator(z, static_label, static_code)
     save_image(static_sample.data, "images/infoGAN/static/%d.png" % batches_done, nrow=n_row, normalize=True)
 
-    # Get varied c1 and c2
+    #Get varied c1 and c2
     zeros = np.zeros((n_row ** 2, 1))
     c_varied = np.repeat(np.linspace(-1, 1, n_row)[:, np.newaxis], n_row, 0)
     c1 = Variable(FloatTensor(np.concatenate((c_varied, zeros), -1)))

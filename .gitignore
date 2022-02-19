@@ -6,3 +6,7 @@ model/
 .DS_Store
 __pycache__/
 out
+out*
+checkpoints/
+*.png
+*.out
