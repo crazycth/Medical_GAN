@@ -28,6 +28,7 @@ trainer = mmc.training.Trainer(
     lr_decay='linear',
     dataloader=dataloader,
     log_dir='./log/example',
+    vis_steps=100,
     device=device)
 trainer.train()
 

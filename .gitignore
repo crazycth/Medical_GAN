@@ -10,3 +10,6 @@ out*
 checkpoints/
 *.png
 *.out
+.log/
+log/*
+pytorch-gan-collections/

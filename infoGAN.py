@@ -248,7 +248,7 @@ def get_medical_loader(batch_size=16,root="dataset/pic_save_0备份"):
     #loader_val = DataLoader(data_val,batch_size=batch_size,sampler=ChunkSampler(val_num,train_num),drop_last=True)
     return loader_train
 
-dataloader = get_medical_loader(opt.batch_size)
+dataloader = get_medical_loader(opt.batch_size,"/home/cth/code/GAN/Medical_GAN/dataset/pic_save_128")
 
 # Optimizers
 optimizer_G = torch.optim.Adam(generator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
