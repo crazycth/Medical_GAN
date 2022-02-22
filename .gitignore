@@ -13,3 +13,5 @@ checkpoints/
 .log/
 log/*
 pytorch-gan-collections/
+log_csngan/*
+log*/
