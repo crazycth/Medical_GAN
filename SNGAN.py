@@ -4,9 +4,10 @@ from torch.nn import utils
 from torch_mimicry.modules.layers import SNLinear
 from torch_mimicry.modules.resblocks import DBlockOptimized, DBlock, GBlock
 from torch_mimicry.nets.sngan import sngan_base
+import torch.nn.functional as F
 
 from torch_mimicry.nets.gan import gan
-
+import os
 
 class ConditionSNGANGenerator128(sngan_base.SNGANBaseGenerator):
     r"""
@@ -17,16 +18,16 @@ class ConditionSNGANGenerator128(sngan_base.SNGANBaseGenerator):
         bottom_width (int): Starting width for upsampling generator output to an image.
         loss_type (str): Name of loss to use for GAN loss.
     """
-    def __init__(self, nz=128, ngf=1024, bottom_width=4, num_classes=2, **kwargs):
+    def __init__(self, nz=128, ngf=1024, bottom_width=4, num_classes=10, **kwargs):
         super().__init__(nz=nz, ngf=ngf, bottom_width=bottom_width, **kwargs)
         self.num_classes = num_classes
         # Build the layers
         self.l1 = nn.Linear(self.nz, (self.bottom_width**2) * self.ngf)
-        self.block2 = GBlock(self.ngf, self.ngf, upsample=True, num_classes=2)
-        self.block3 = GBlock(self.ngf, self.ngf >> 1, upsample=True, num_classes=2)
-        self.block4 = GBlock(self.ngf >> 1, self.ngf >> 2, upsample=True, num_classes=2)
-        self.block5 = GBlock(self.ngf >> 2, self.ngf >> 3, upsample=True, num_classes=2)
-        self.block6 = GBlock(self.ngf >> 3, self.ngf >> 4, upsample=True, num_classes=2)
+        self.block2 = GBlock(self.ngf, self.ngf, upsample=True, num_classes=self.num_classes)
+        self.block3 = GBlock(self.ngf, self.ngf >> 1, upsample=True, num_classes=self.num_classes)
+        self.block4 = GBlock(self.ngf >> 1, self.ngf >> 2, upsample=True, num_classes=self.num_classes)
+        self.block5 = GBlock(self.ngf >> 2, self.ngf >> 3, upsample=True, num_classes=self.num_classes)
+        self.block6 = GBlock(self.ngf >> 3, self.ngf >> 4, upsample=True, num_classes=self.num_classes)
         self.b7 = nn.BatchNorm2d(self.ngf >> 4)
         self.c7 = nn.Conv2d(self.ngf >> 4, 3, 3, 1, padding=1)
         self.activation = nn.ReLU(True)
@@ -35,7 +36,7 @@ class ConditionSNGANGenerator128(sngan_base.SNGANBaseGenerator):
         nn.init.xavier_uniform_(self.l1.weight.data, 1.0)
         nn.init.xavier_uniform_(self.c7.weight.data, 1.0)
 
-    def forward(self, x, y):
+    def forward(self, x, y=None):
         r"""
         Feedforwards a batch of noise vectors into a batch of fake images.
         Args:
@@ -127,10 +128,6 @@ class ConditionSNGANGenerator128(sngan_base.SNGANBaseGenerator):
         log_data.add_metric('errG', errG, group='loss')
 
         return log_data
-    
-
-
-
 
 
 class SNGANDiscriminator128(sngan_base.SNGANBaseDiscriminator):
@@ -140,24 +137,25 @@ class SNGANDiscriminator128(sngan_base.SNGANBaseDiscriminator):
         ndf (int): Variable controlling discriminator feature map sizes.
         loss_type (str): Name of loss to use for GAN loss.
     """
-    def __init__(self, ndf=1024, **kwargs):
+    def __init__(self, ndf=1024, num_classes = 10, **kwargs):
         super().__init__(ndf=ndf, **kwargs)
 
         # Build layers
         self.block1 = DBlockOptimized(3, self.ndf >> 4)
         self.block2 = DBlock(self.ndf >> 4, self.ndf >> 3, downsample=True)
         self.block3 = DBlock(self.ndf >> 3, self.ndf >> 2, downsample=True)
-        self.block4 = DBlock((self.ndf >> 2) + 512, self.ndf >> 1, downsample=True)
+        self.block4 = DBlock((self.ndf >> 2) + 64, self.ndf >> 1, downsample=True)
         self.block5 = DBlock(self.ndf >> 1, self.ndf, downsample=True)
         self.block6 = DBlock(self.ndf, self.ndf, downsample=False)
         self.l7 = SNLinear(self.ndf, 1)
         self.activation = nn.ReLU(True)
+        self.num_classes = num_classes
 
         # Initialise the weights
         nn.init.xavier_uniform_(self.l7.weight.data, 1.0)
 
         # self.embed = nn.Embedding(2, (self.ndf>>2) * 2)
-        self.l_y = utils.spectral_norm(nn.Embedding(2, 512))
+        self.l_y = utils.spectral_norm(nn.Embedding(self.num_classes,64))
         
     def train_step(self,
                    real_batch,
@@ -175,8 +173,8 @@ class SNGANDiscriminator128(sngan_base.SNGANBaseDiscriminator):
         output_real = self.forward(real_images, real_labels)
 
         # Produce fake images
-        fake_images, fake_labels = netG.generate_images_with_labels(num_images=batch_size,
-                                           device=device,c=0)
+        fake_images, fake_labels = netG.generate_images_with_labels(num_images=batch_size,device=device,c=0)
+
         fake_images.detach()
         fake_labels.detach()
         # Produce logits for fake images
@@ -201,7 +199,7 @@ class SNGANDiscriminator128(sngan_base.SNGANBaseDiscriminator):
 
         return log_data
     
-    def forward(self, x, y):
+    def forward(self, x, y=None):
         r"""
         Feedforwards a batch of real/fake images and produces a batch of GAN logits.
         Args:
@@ -215,6 +213,7 @@ class SNGANDiscriminator128(sngan_base.SNGANBaseDiscriminator):
         h = self.block3(h)
         if y is not None:
             emb = self.l_y(y).unsqueeze(-1).unsqueeze(-1)
+            emb = F.normalize(emb,p=2,dim=1)
             emb = emb.expand(emb.size(0), emb.size(1), h.size(2), h.size(3))
             h = torch.cat((h, emb), dim=1)
         h = self.block4(h)
@@ -224,8 +223,6 @@ class SNGANDiscriminator128(sngan_base.SNGANBaseDiscriminator):
         # Global sum pooling
         h = torch.sum(h, dim=(2, 3))
         output = self.l7(h)
-
-        #output = self.l7(h) + torch.dot(h,y)
         
         return output
 
@@ -234,19 +231,21 @@ import torch
 import torch.optim as optim
 import torch_mimicry as mmc
 from torch_mimicry.nets import sngan
-from Dataloader import *
+from loader import *
+
 # Data handling objects
 device = torch.device('cuda:0' if torch.cuda.is_available() else "cpu")
+# device = torch.device('cpu')
 # dataset = mmc.datasets.load_dataset(root='./datasets', name='cifar10')
 # dataloader = torch.utils.data.DataLoader(dataset, batch_size=64, shuffle=True, num_workers=4)
 
-train_dataloader = get_loader(32,r"pic_trans_128")
+train_dataloader = get_Cifar_10_loader(64,r"/home/cth/code/GAN/Medical_GAN/dataset/pic_trans_128")
 
 # Define models and optimizers
 netG = ConditionSNGANGenerator128().to(device)
 netD = SNGANDiscriminator128().to(device)
-optD = optim.Adam(netD.parameters(), 2e-4, betas=(0.0, 0.9))
-optG = optim.Adam(netG.parameters(), 2e-4, betas=(0.0, 0.9))
+optD = optim.Adam(netD.parameters(), 1e-5, betas=(0.0, 0.9))
+optG = optim.Adam(netG.parameters(), 1e-5, betas=(0.0, 0.9))
 
 # Start training
 trainer = mmc.training.Trainer(
@@ -258,8 +257,9 @@ trainer = mmc.training.Trainer(
     num_steps=100000,
     lr_decay='linear',
     dataloader=train_dataloader,
-    log_dir='./log/reality',
+    log_dir='./log/emb',
     device=device,
     vis_steps=200,
     )
+
 trainer.train()
